@@ -143,8 +143,9 @@ class TreeTests(unittest.TestCase):
             self.assertAlmostEqual(r["shared_variants"] / len(self.ref), self.d * (4 - level) / 4, delta=0.0015)
         # each genome's nearest neighbour is its sibling
         for a in range(16):
-            nearest = min((b for b in range(16) if b != a), key=lambda b: dist[min(a, b), max(a, b)]["distance"])
-            self.assertEqual(nearest, a ^ 1)
+            others = [b for b in range(16) if b != a]
+            distances = [dist[min(a, b), max(a, b)]["distance"] for b in others]
+            self.assertEqual(others[distances.index(min(distances))], a ^ 1)
 
     def test_second_tree_is_unrelated(self):
         g, logs = simulate_tree_collection(self.ref, 6, self.d, seed=42, height=2)

@@ -1,6 +1,6 @@
 """Pairwise genome similarity from BWT run counts: the naive version.
 
-Same measures and output files as pangenome.similarity, computed the direct
+Same measures and output files as pangenome.bwt.similarity, computed the direct
 way: for every pair of genomes, build the BWT of just those two and count its
 runs. With d genomes that is d single-genome BWTs plus d(d-1)/2 two-genome
 BWTs, so the cost grows with the square of the number of genomes, where the
@@ -10,7 +10,7 @@ It exists as a baseline for timing and as an independent check: both versions
 must produce identical run counts.
 
 Usage:
-    python -m pangenome.similarity_naive --collection data/synthetic_small/uneven_d0.01
+    python -m pangenome.bwt.similarity_naive --collection data/synthetic_small/uneven_d0.01
 """
 
 from __future__ import annotations
@@ -20,7 +20,7 @@ import time
 
 import numpy as np
 
-from .bwt import build_bwt, count_runs
+from .build import build_bwt, count_runs
 from .similarity import measures, output_dir, parse_args, print_summary, read_genomes, write_results
 
 
@@ -41,9 +41,9 @@ def similarity_naive(genomes: list[str], progress: bool = False) -> dict:
 
 
 def main(argv: list[str] | None = None) -> int:
-    args = parse_args("python -m pangenome.similarity_naive", __doc__, "results/similarity_naive", argv)
+    args = parse_args("python -m pangenome.bwt.similarity_naive", __doc__, "results/bwt_similarity_naive", argv)
     genomes = read_genomes(args.collection, args.num_genomes)
-    out = output_dir(args.out, "results/similarity_naive", args.collection, len(genomes))
+    out = output_dir(args.out, "results/bwt_similarity_naive", args.collection, len(genomes))
 
     start = time.time()
     res = similarity_naive(genomes, progress=True)

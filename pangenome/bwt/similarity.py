@@ -16,13 +16,13 @@ distance   (r(A,B) - max(r(A), r(B))) / min(r(A), r(B))
            genome is by itself.
 
 Method. One BWT is built for the whole collection. The BWT of any pair is
-that BWT with the other genomes' rows deleted (see pangenome.bwt), so a single
+that BWT with the other genomes' rows deleted (see pangenome.bwt.build), so a single
 pass over the rows yields the run count of every pair at once: for the row's
 genome g and each other genome h, the previous row of the (g, h) pair is
 whichever of g and h appeared most recently.
 
 Usage:
-    python -m pangenome.similarity --collection data/synthetic_small/uneven_d0.01
+    python -m pangenome.bwt.similarity --collection data/synthetic_small/uneven_d0.01
 """
 
 from __future__ import annotations
@@ -37,7 +37,7 @@ from numba import njit
 
 from simulator.genomes import genome_name, load_collection
 
-from .bwt import build_bwt
+from .build import build_bwt
 
 
 @njit(cache=True)
@@ -202,9 +202,9 @@ def print_summary(res: dict, genomes: list[str], elapsed: float, collection: str
 
 
 def main(argv: list[str] | None = None) -> int:
-    args = parse_args("python -m pangenome.similarity", __doc__, "results/similarity", argv)
+    args = parse_args("python -m pangenome.bwt.similarity", __doc__, "results/bwt_similarity", argv)
     genomes = read_genomes(args.collection, args.num_genomes)
-    out = output_dir(args.out, "results/similarity", args.collection, len(genomes))
+    out = output_dir(args.out, "results/bwt_similarity", args.collection, len(genomes))
 
     start = time.time()
     res = similarity(genomes)
