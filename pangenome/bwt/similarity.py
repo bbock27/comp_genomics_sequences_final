@@ -28,6 +28,7 @@ Usage:
 from __future__ import annotations
 
 import argparse
+import os
 import sys
 import time
 from pathlib import Path
@@ -88,10 +89,16 @@ def measures(runs: np.ndarray, genomes: list[str]) -> dict:
 
 def similarity(genomes: list[str]) -> dict:
     """Run counts, lengths, r/n, and normalised distance for every pair."""
+    start = time.perf_counter()
     bwt, doc = build_bwt(genomes)
-    res = measures(pairwise_runs(bwt, doc, len(genomes)), genomes)
+    built = time.perf_counter()
+    runs = pairwise_runs(bwt, doc, len(genomes))
+    swept = time.perf_counter()
+    res = measures(runs, genomes)
     res["collection_runs"] = int(np.count_nonzero(bwt[1:] != bwt[:-1]) + 1)
     res["collection_n"] = int(len(bwt))
+    res["build_seconds"] = built - start
+    res["sweep_seconds"] = swept - built
     return res
 
 
@@ -157,12 +164,17 @@ def evaluate(res: dict, truth_file: Path) -> dict | None:
     return out
 
 
-def parse_args(prog: str, doc: str, default_dir: str, argv: list[str] | None) -> argparse.Namespace:
-    """Command-line options shared by both similarity tools."""
+def parse_args(prog: str, doc: str, default_dir: str, argv: list[str] | None,
+               workers: bool = False) -> argparse.Namespace:
+    """Command-line options shared by the similarity tools. The parallel
+    versions pass workers=True to add a --workers option."""
     parser = argparse.ArgumentParser(prog=prog, description=doc, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("--collection", required=True, help="directory with genomes.fasta")
     parser.add_argument("--num-genomes", type=int, help="use only the first N genomes")
     parser.add_argument("--out", help=f"output directory (default {default_dir}/<collection>_nNNN)")
+    if workers:
+        parser.add_argument("--workers", type=int, default=os.cpu_count(),
+                            help="cores to use (default: all of them)")
     return parser.parse_args(argv)
 
 
@@ -188,6 +200,8 @@ def print_summary(res: dict, genomes: list[str], elapsed: float, collection: str
     iu = np.triu_indices(d, 1)
     total = sum(len(g) + 1 for g in genomes)
     print(f"{d} genomes, {total} characters, built and compared in {elapsed:.1f} s", file=sys.stderr)
+    if "build_seconds" in res:
+        print(f"  building the BWT {res['build_seconds']:.2f} s, sweep {res['sweep_seconds']:.2f} s", file=sys.stderr)
     if "collection_runs" in res:
         print(f"whole collection: r = {res['collection_runs']}, r/n = {res['collection_runs'] / res['collection_n']:.5f}",
               file=sys.stderr)
