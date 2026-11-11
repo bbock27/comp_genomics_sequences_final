@@ -18,6 +18,7 @@ from __future__ import annotations
 
 import random
 from dataclasses import dataclass, field
+from operator import itemgetter
 from pathlib import Path
 
 from .genomes import Variant, genome_name
@@ -59,9 +60,10 @@ def recombinant_candidates(
 ) -> list[tuple[Variant, Variant]]:
     """Pairs (vA, vB): a variant of A followed by a variant of B, with no other
     variant of either genome in between, that fit in a pattern of ``length``."""
+    # each entry is (ref_pos, ref_end, source genome, variant); sort on the first three
     merged = sorted(
         [(v.ref_pos, v.ref_end, 0, v) for v in log_a] + [(v.ref_pos, v.ref_end, 1, v) for v in log_b],
-        key=lambda t: t[:3],
+        key=itemgetter(0, 1, 2),
     )
     out = []
     b_end = 0  # furthest reference position touched by a variant of B so far

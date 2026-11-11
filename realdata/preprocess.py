@@ -110,7 +110,10 @@ def process_assembly(fasta: str | Path, anchor: str) -> Processed:
     records = read_fasta(fasta)
     if not records:
         raise ValueError(f"{fasta}: no FASTA records")
-    header, raw = max(records, key=lambda r: len(r[1]))
+    header, raw = records[0]
+    for record in records[1:]:  # keep the longest record (the first one on a tie)
+        if len(record[1]) > len(raw):
+            header, raw = record
     seq, dropped = clean(raw)
     norm = normalize(seq, anchor)
     return Processed(norm.seq, header, len(records), sum(len(s) for _, s in records) - len(raw), dropped,

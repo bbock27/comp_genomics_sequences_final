@@ -88,6 +88,11 @@ class MutationModel:
             raise ValueError("max_indel must be at least 1")
 
 
+def _by_position(v: Variant) -> tuple[int, int]:
+    """Sort key: variants in reference order."""
+    return v.ref_pos, v.ref_end
+
+
 def _indel_length(rng: random.Random, max_indel: int) -> int:
     n = 1
     while n < max_indel and rng.random() < 0.5:
@@ -155,7 +160,7 @@ def apply_variants(reference: str, variants: list[Variant]) -> str:
     """
     out: list[str] = []
     last = 0
-    for v in sorted(variants, key=lambda v: (v.ref_pos, v.ref_end)):
+    for v in sorted(variants, key=_by_position):
         if v.ref_pos < last:
             raise ValueError(f"overlapping variants at reference position {v.ref_pos}")
         if reference[v.ref_pos : v.ref_end] != v.ref:
@@ -170,7 +175,7 @@ class CoordMap:
     """Convert between reference and copy coordinates for one genome."""
 
     def __init__(self, variants: list[Variant]):
-        self.variants = sorted(variants, key=lambda v: (v.ref_pos, v.ref_end))
+        self.variants = sorted(variants, key=_by_position)
         self._ref_ends = [v.ref_end for v in self.variants]
         self._copy_ends = [v.copy_end for v in self.variants]
         self._shifts: list[int] = []
@@ -290,7 +295,7 @@ def simulate_tree_collection(
             _, own = mutate(reference, rng, branch_rate(seed, divergence, height, level, node, variation), model)
             starts = [v.ref_pos for v in inherited]
             kept = [v for v in own if not _conflicts(v, starts, inherited)]
-            node_cache[key] = sorted(inherited + kept, key=lambda v: v.ref_pos)
+            node_cache[key] = sorted(inherited + kept, key=_by_position)
         return node_cache[key]
 
     genomes, logs = [], []
