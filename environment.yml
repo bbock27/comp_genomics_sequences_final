@@ -1,0 +1,12 @@
+# Environment for the pangenome indexing project.
+#   conda env create -f environment.yml
+#   conda activate pangenome
+# On an Apple-silicon Mac whose conda defaults to Intel packages, add
+# "--platform osx-arm64" to the create command for a native (faster) build.
+name: pangenome
+channels:
+  - conda-forge
+dependencies:
+  - python=3.12
+  - numpy
+  - numba

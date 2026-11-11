@@ -218,3 +218,10 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+
+# Generated data (python -m simulator suite, python -m realdata all)
+/data/
+
+# NCBI datasets command-line binaries
+/ncbi_tools/
