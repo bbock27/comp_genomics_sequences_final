@@ -7,7 +7,9 @@ to each other in the BWT, so they add few runs:
     A and B identical   r(A,B) is about r(A)
     A and B unrelated   r(A,B) is about r(A) + r(B)
 
-Two numbers are reported per pair (lower = more similar in both):
+Two numbers are reported per pair (lower = more similar in both). pairs.tsv
+also has n_over_r = n(A,B) / r(A,B), the average run length: the reciprocal
+of r_over_n, so higher = more similar.
 
 r_over_n   r(A,B) / n(A,B), the raw measure
 distance   (r(A,B) - max(r(A), r(B))) / min(r(A), r(B))
@@ -84,7 +86,7 @@ def measures(runs: np.ndarray, genomes: list[str]) -> dict:
     own = np.diag(runs)
     distance = (runs - np.maximum.outer(own, own)) / np.minimum.outer(own, own)
     np.fill_diagonal(distance, 0.0)
-    return {"runs": runs, "n": n, "r_over_n": runs / n, "distance": distance}
+    return {"runs": runs, "n": n, "r_over_n": runs / n, "n_over_r": n / runs, "distance": distance}
 
 
 def similarity(genomes: list[str]) -> dict:
@@ -111,10 +113,11 @@ def write_results(out: Path, res: dict) -> None:
     d = len(res["runs"])
     names = [genome_name(i) for i in range(d)]
     with open(out / "pairs.tsv", "w") as fh:
-        fh.write("genome_a\tgenome_b\tn\tr\tr_over_n\tr_a\tr_b\tdistance\n")
+        fh.write("genome_a\tgenome_b\tn\tr\tr_over_n\tn_over_r\tr_a\tr_b\tdistance\n")
         for a in range(d):
             for b in range(a + 1, d):
                 fh.write(f"{names[a]}\t{names[b]}\t{res['n'][a, b]}\t{res['runs'][a, b]}\t{res['r_over_n'][a, b]:.6g}\t"
+                         f"{res['n_over_r'][a, b]:.6g}\t"
                          f"{res['runs'][a, a]}\t{res['runs'][b, b]}\t{res['distance'][a, b]:.6g}\n")
     for key in ("r_over_n", "distance"):
         with open(out / f"{key}_matrix.tsv", "w") as fh:

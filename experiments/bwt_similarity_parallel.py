@@ -135,7 +135,11 @@ def series(rows: list[dict], method: str, field: str) -> tuple[list[int], list[f
 
 def format_seconds(value: float, _pos: object = None) -> str:
     if value >= 600:
-        return f"{value / 60:g} min"
+        return f"{round(value / 60, 1):g} min"
+    return f"{float(f'{value:.3g}'):g} s"
+
+
+def format_tick_seconds(value: float, _pos: object = None) -> str:
     return f"{value:g} s"
 
 
@@ -148,7 +152,7 @@ def plot(out: Path) -> None:
 
     matplotlib.use("Agg")
     import matplotlib.pyplot as plt
-    from matplotlib.ticker import FuncFormatter, NullFormatter
+    from matplotlib.ticker import FuncFormatter, LogLocator, NullFormatter
 
     rows, machine = load(out)
     plt.rcParams.update({"font.family": "sans-serif", "font.size": 10, "axes.edgecolor": AXIS,
@@ -172,9 +176,10 @@ def plot(out: Path) -> None:
         ax.set_xticks(ticks)
         ax.xaxis.set_major_formatter(FuncFormatter(format_plain))
         ax.xaxis.set_minor_formatter(NullFormatter())
-        ax.yaxis.set_major_formatter(FuncFormatter(format_seconds))
+        ax.yaxis.set_major_formatter(FuncFormatter(format_tick_seconds))
         ax.yaxis.set_minor_formatter(NullFormatter())
         ax.minorticks_off()
+        ax.yaxis.set_major_locator(LogLocator(base=10, subs=(1, 2, 5)))
         ax.grid(axis="y", which="major", color=GRID, linewidth=1, zorder=0)
         ax.tick_params(length=0, which="both")
         for side in ("top", "right", "left"):
@@ -193,16 +198,16 @@ def plot(out: Path) -> None:
     style(left, "Total time")
     left.annotate(f"{format_seconds(sy[-1])}", xy=(sx[-1], sy[-1]), xytext=(0, 9), textcoords="offset points",
                   ha="center", fontsize=9.5, color=INK2)
-    left.annotate(f"{format_seconds(round(ny[-1], 1))}", xy=(nx[-1], ny[-1]), xytext=(0, 9),
+    left.annotate(f"{format_seconds(ny[-1])}", xy=(nx[-1], ny[-1]), xytext=(0, 9),
                   textcoords="offset points", ha="center", fontsize=9.5, color=INK2)
-    left.annotate(f"{format_seconds(round(ny[0], 1))}", xy=(nx[0], ny[0]), xytext=(0, 9), textcoords="offset points",
+    left.annotate(f"{format_seconds(ny[0])}", xy=(nx[0], ny[0]), xytext=(0, 9), textcoords="offset points",
                   ha="center", fontsize=9.5, color=INK2)
     faster = "naive" if ny[-1] < sy[-1] else "single BWT"
     ratio = max(ny[-1], sy[-1]) / min(ny[-1], sy[-1])
     left.set_title("Whole computation", loc="left", fontsize=11.5, color=INK, pad=24, fontweight="bold")
     left.text(0, 1.03, f"naive is {ny[0] / ny[-1]:.0f}× faster at {nx[-1]} workers than at 1; "
               f"{faster} is then {ratio:.1f}× faster", transform=left.transAxes, fontsize=9.5, color=INK2)
-    left.legend(loc="lower left", frameon=False, fontsize=9.5, labelcolor=INK2, handlelength=2.2)
+    left.legend(loc="upper right", frameon=False, fontsize=9.5, labelcolor=INK2, handlelength=2.2)
 
     # right: the sweep alone
     line(right, sweep_x, sweep_y, BLUE, "Sweep only")
@@ -218,13 +223,13 @@ def plot(out: Path) -> None:
     right.annotate(f"{sweep_y[-1]:.2f} s", xy=(sweep_x[-1], sweep_y[-1]), xytext=(0, 9), textcoords="offset points",
                    ha="center", fontsize=9.5, color=INK2)
 
-    fig.suptitle("BWT run-count similarity: what extra cores buy", x=0.06, y=0.98, ha="left", fontsize=14,
+    fig.suptitle("BWT run-count similarity: what extra cores buy", x=0.1, y=0.98, ha="left", fontsize=14,
                  color=INK, fontweight="bold")
-    fig.text(0.06, 0.015, f"{machine['genomes']} genomes, {int(machine['characters']) / 1e6:.0f} million characters "
+    fig.text(0.1, 0.015, f"{machine['genomes']} genomes, {int(machine['characters']) / 1e6:.0f} million characters "
              f"({machine['collection']}). {machine['cores']} cores, host {machine['host']}. Both axes logarithmic. "
              f"One run per point. Serial single-BWT total: {format_seconds(round(single_serial, 1))}.",
              fontsize=8.5, color=MUTED)
-    fig.subplots_adjust(left=0.085, right=0.975, top=0.8, bottom=0.17, wspace=0.22)
+    fig.subplots_adjust(left=0.1, right=0.975, top=0.8, bottom=0.17, wspace=0.22)
     fig.savefig(out / "parallel.png", dpi=170, facecolor=SURFACE)
     log(f"wrote {out / 'parallel.png'}")
 
